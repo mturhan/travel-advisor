@@ -6,26 +6,45 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { Attractions, Avatar, HeroImage, Hotels, Restaurants } from "../assets";
+import {
+  Attractions,
+  Avatar,
+  HeroImage,
+  Hotels,
+  NotFound,
+  Restaurants,
+} from "../assets";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import { ScrollView } from "react-native";
 import { ArrowRightIcon } from "react-native-heroicons/solid";
 import MenuContainer from "../components/MenuContainer";
 import ItemCardContainer from "../components/ItemCardContainer";
+import { getPlacesData } from "../api";
 
 const DiscoverScreen = () => {
   const navigation = useNavigation();
 
   const [type, setType] = useState("restaurants");
-  const [isLoading, setisLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mainData, setMainData] = useState([]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
   }, []);
+
+  useEffect(() => {
+    setIsLoading(true);
+    getPlacesData().then((data) => {
+      setMainData(data);
+
+      setIsLoading(false);
+    });
+  }, []);
+
   // google API KEY: AIzaSyATTplSH-7wFxr6nfcmm8BHPCtt9Ooh2JQ
   return (
     <SafeAreaView className="flex-1 bg-white relative">
@@ -101,18 +120,36 @@ const DiscoverScreen = () => {
               </TouchableOpacity>
             </View>
             <View className="px-4 mt-8 flex-row items-center justify-evenly flex-wrap">
-              <ItemCardContainer
-                key={"101"}
-                imageSrc="https://picsum.photos/536/354"
-                title="some"
-                location="doha"
-              />
-              <ItemCardContainer
-                key={"102"}
-                imageSrc="https://picsum.photos/seed/picsum/536/354"
-                title="sample"
-                location="qatar"
-              />
+              {mainData?.length > 0 ? (
+                <>
+                  {mainData?.map((data, i) => (
+                    <ItemCardContainer
+                      key={i}
+                      imageSrc={
+                        data?.photo?.images?.medium?.url
+                          ? data?.photo?.images?.medium?.url
+                          : "https://picsum.photos/536/354"
+                      }
+                      title={data?.name}
+                      location={data?.location_string}
+                      data={data}
+                    />
+                  ))}
+                </>
+              ) : (
+                <>
+                  <View className="w-full h-[400px] items-center space-y-8 justify-center">
+                    <Image
+                      source={NotFound}
+                      className="w-32 h-32 object-cover
+              "
+                    />
+                    <Text className="text-2xl text-[#428288] font-semibold">
+                      Oops...No Data Found
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </ScrollView>
